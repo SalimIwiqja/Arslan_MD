@@ -2,37 +2,36 @@ const { cmd } = require('../command');
 
 cmd({
     pattern: 'tagall',
-    alias: ['mentionall', 'all'],
-    desc: 'Mention all group members',
+    alias: ['all', 'mentionall'],
+    desc: 'Mention all members in the group',
     category: 'group',
     react: '📢',
     filename: __filename
-}, async (client, match, message, { from, isGroup }) => {
-    if (!isGroup) {
-        return await client.sendMessage(from, {
-            text: "❌ This command can only be used in groups."
-        }, { quoted: message });
-    }
-
+}, async (client, args, message, { from, isGroup, participants }) => {
     try {
-        // Get group metadata
-        const metadata = await client.groupMetadata(from);
-        const members = metadata.participants.map(p => p.id);
+        if (!isGroup) {
+            return await client.sendMessage(from, {
+                text: "❌ This command can only be used in groups."
+            }, { quoted: message });
+        }
 
-        // Build message
-        let text = "📢 *Tagging All Members:*\n\n";
+        // Get all member IDs
+        let members = participants.map(p => p.id);
+
+        // Optional custom text from user
+        let customMsg = args ? args.trim() : '';
+        let text = customMsg ? `📢 *Message from admin:*\n${customMsg}\n\n` : "📢 *Tagging all members:*\n\n";
+
+        // Build mention list
         text += members.map((id, i) => `${i + 1}. @${id.split('@')[0]}`).join('\n');
 
-        // Send with mentions
         await client.sendMessage(from, {
             text,
             mentions: members
         }, { quoted: message });
 
     } catch (err) {
-        console.error("Tagall error:", err);
-        await client.sendMessage(from, {
-            text: "❌ Failed to fetch group members."
-        }, { quoted: message });
+        console.error("TagAll Error:", err);
+        await client.sendMessage(from, { text: "⚠️ Failed to tag members." }, { quoted: message });
     }
 });
